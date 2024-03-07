@@ -1,0 +1,59 @@
+      <div style={{ width: "30rem" }}>
+
+
+        <div>
+          <p> CoupanCount :
+            {
+              Object.keys(CoupanCount).map((key, index) => {
+                return (
+                  <div key={index}>
+                      {key==''?"No Coupan Used" :key}: {CoupanCount[key]}
+                  </div>
+                );
+              })
+            }
+          </p>
+        </div>
+        <div>
+          <p>Orders</p>
+          <table>
+                  <thead>
+                    <tr>
+                      <td>Order Id</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+          {
+            Orders.map((item,index)=>{
+              return(
+                <>
+                
+                    <tr>
+                      <td>{item._id}</td>
+                    </tr>
+                  
+                </>
+              )
+            })
+          }
+          </tbody>
+                </table>
+        </div>
+        <div>
+          <p>Order Status
+          {
+
+Object.keys(order_statusCount).map((key, index) => {
+  return (
+    <div key={index}>
+        {key}: {order_statusCount[key]}
+    </div>
+  );
+})
+          }
+          </p>
+        </div>
+        <div>
+
+           </div>
+      </div>

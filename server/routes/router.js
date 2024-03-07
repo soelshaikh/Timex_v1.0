@@ -13,6 +13,7 @@ const multer = require("multer");
 const addressdb = require("../models/addressSchema");
 const orderdb = require("../models/orderSchema");
 const moment = require("moment");
+const axios = require("axios");
 
 const client = require("twilio")(
   "AC8932bdddad0bb6549ae8ba6700149d91",
@@ -28,6 +29,9 @@ const instance = new Razorpay({
   key_id: process.env.RAZORPAY_API_KEY,
   key_secret: process.env.RAZORPAY_API_SECRET,
 });
+const authString = `${instance.key_id}:${instance.key_secret}`;
+
+const encodedAuthString = Buffer.from(authString).toString("base64");
 
 //img config
 
@@ -1047,7 +1051,6 @@ router.post("/paymentverification/:id", authenticate, async (req, res) => {
       }
       const validUserOne = await userdb.findOne({ _id: req.userId });
       console.log("validUserOne", validUserOne);
-
       res.status(201).json({ status: 201, validUserOne });
     } else {
       res.status(400).json({
@@ -1548,9 +1551,12 @@ router.get("/order/:id", authenticate, async (req, res) => {
 router.get("/cancelorder/:id", authenticate, async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("1423", id);
     const order = await orderdb.findById({ _id: id });
     console.log(order);
+
+    if (order.PaymentStatus == "paid") {
+      refundRazorpayPayment(order.razorpayPaymentId);
+    }
 
     const updateData = await orderdb.findByIdAndUpdate(
       { _id: id },
@@ -1567,6 +1573,25 @@ router.get("/cancelorder/:id", authenticate, async (req, res) => {
     res.status(422).json(error);
   }
 });
+async function refundRazorpayPayment(id) {
+  try {
+    const response = await axios.post(
+      `https://api.razorpay.com/v1/payments/${id}/refund`,
+      {},
+      {
+        headers: {
+          Authorization: `Basic ${encodedAuthString}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+    const res = response.data;
+    res.status(201).json({ status: 201, res });
+  } catch (error) {
+    console.error("Refund failed:");
+  }
+}
+
 router.get("/returnorder/:id", authenticate, async (req, res) => {
   try {
     const { id } = req.params;

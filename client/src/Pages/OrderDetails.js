@@ -29,9 +29,6 @@ const OrderDetails = () => {
         "Content-Type": "application/json",
         Authorization: token,
       },
-      body:JSON.stringify({
-        orderStatus:newOrderStatus
-      }),
       credentials: "include",
     });
 

@@ -14,6 +14,7 @@ const addressdb = require("../models/addressSchema");
 const orderdb = require("../models/orderSchema");
 const moment = require("moment");
 const axios = require("axios");
+moment.suppressDeprecationWarnings = true;
 
 const client = require("twilio")(
   "AC8932bdddad0bb6549ae8ba6700149d91",
@@ -25,6 +26,7 @@ const crypto = require("crypto");
 //key id  : rzp_test_cmtxfoTsk6vF56
 //key secrett : tfcH4NtGEoR6TkqrOZ7WRV35
 const Razorpay = require("razorpay");
+const { log } = require("console");
 const instance = new Razorpay({
   key_id: process.env.RAZORPAY_API_KEY,
   key_secret: process.env.RAZORPAY_API_SECRET,
@@ -1681,10 +1683,8 @@ router.patch("/updateorderstatus/:id", authenticate, async (req, res) => {
 });
 router.post("/addcoupan", async (req, res) => {
   console.log(req.body);
-  const { coupanName, coupanDiscount } = req.body;
-  console.log(coupanName);
-  console.log(coupanDiscount);
-  console.log("heloo");
+  const { coupanName, coupanDiscount, sd, ed, isDisplay, isActive } = req.body;
+
   if (!coupanName || !coupanDiscount) {
     res.status(422).json({ error: "fill the details" });
   }
@@ -1700,6 +1700,10 @@ router.post("/addcoupan", async (req, res) => {
       const newCoupan = await coupandb({
         coupanName: coupanName,
         coupanDiscount: coupanDiscount,
+        startDate: sd,
+        endDate: ed,
+        isDisplay: isDisplay,
+        isActive: isActive,
       });
       await newCoupan.save();
       res.status(201).json({ status: 201, message: "DOne" });
@@ -1733,7 +1737,7 @@ router.get("/getcoupan/:id", async (req, res) => {
 router.patch("/updatecoupan/:id", async (req, res) => {
   try {
     const { id } = req.params;
-
+    console.log(req.body);
     console.log(id);
     const updatecoupan = await coupandb.findByIdAndUpdate(id, req.body, {
       new: true,
@@ -1764,25 +1768,45 @@ router.delete("/deletecoupan/:id", async (req, res) => {
 
 router.post("/applycoupan", authenticate, async (req, res) => {
   const { coupanName } = req.body;
-  // const totalAmount = 32000;
   try {
-    const coupanValid = await coupandb.findOne({ coupanName: coupanName });
+    // Find the coupon in the database
+    const coupon = await coupandb.findOne({ coupanName: coupanName });
 
-    if (coupanValid) {
-      res.status(201).json({ status: 201, coupanValid });
+    if (coupon) {
+      // Get the current date
+      const currentDate = moment();
+      // Get the expiration date of the coupon
+      const expirationDate = moment(coupon.endDate);
+
+      // Compare the current date with the expiration date
+      if (currentDate.isAfter(expirationDate, "day")) {
+        // Coupon has expired
+        console.log("Coupon has expired");
+        return res.status(421).json({ status: 421, error: "Coupon Expired" });
+      }
+      else if (!coupon.isActive) {
+        // Coupon has expired
+        console.log("Coupon Is InActive");
+        return res.status(420).json({ status: 420, error: "Coupon is InActive" });
+      }
+      else {
+        // Coupon is valid
+        console.log("Coupon is valid");
+        return res.status(201).json({ status: 201, coupon });
+      }
     } else {
-      res.status(422).json({ status: 422, error: "coupan not valid" });
+      console.log("Coupon not found in the database");
+      // Coupon not found in the database
+      return res.status(422).json({ status: 422, error: "Coupon not valid" });
     }
   } catch (error) {
-    res.status(422).json(error);
+    // Handle database errors or other exceptions
+    console.error("Error:", error);
+    console.log("Internal Server Error");
+    return res
+      .status(500)
+      .json({ status: 500, error: "Internal Server Error" });
   }
-  // let afterdiscount = 0
-  // if(coupanValid){
-  //     afterdiscount = totalAmount - (totalAmount * coupanValid.coupanDiscount / 100);
-  //     console.log(afterdiscount);
-  // }else{
-  //     console.log("coupan not valid");
-  // }
 });
 
 router.post("/coupandiscount/:id", authenticate, async (req, res) => {

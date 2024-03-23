@@ -15,6 +15,7 @@ import Col from "react-bootstrap/Col";
 import { useNavigate, NavLink, json } from "react-router-dom";
 const moment = require("moment");
 
+
 const Reports = () => {
   // const [list,setList] = useState([])
   const [CoupanCount, setCoupanCount] = useState([]);
@@ -140,8 +141,7 @@ const Reports = () => {
     }
   };
   const Genrate = () => {
-    console.log("Genrate");
-    console.log(startDate, endDate);
+
     if (moment(startDate).format("DD-MM") > moment(endDate).format("DD-MM")) {
       console.log("satrtdate");
       setdateError("Please Select Valid Dates");
